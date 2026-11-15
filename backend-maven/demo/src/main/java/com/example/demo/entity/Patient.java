@@ -27,6 +27,12 @@ public class Patient {
     @Column(nullable = false)
     private String password;
 
+    @Column(nullable = true, length = 20)
+    private String gender;
+
+    @Column(nullable = true)
+    private Integer age;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -70,6 +76,22 @@ public class Patient {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public String getGender() {
+        return gender;
+    }
+
+    public void setGender(String gender) {
+        this.gender = gender;
+    }
+
+    public Integer getAge() {
+        return age;
+    }
+
+    public void setAge(Integer age) {
+        this.age = age;
     }
 
     public LocalDateTime getCreatedAt() {

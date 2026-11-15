@@ -24,7 +24,7 @@ const roles = [
     description:
       "Manage patient registrations, appointments, and hospital operations.",
     icon: "🏥",
-    href: "/receptionist/login",
+    href: "/receptionist",
     color: "from-violet-500 to-purple-500",
     bg: "bg-violet-50",
   },
@@ -35,17 +35,19 @@ export default function Home() {
     <main className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 text-slate-900">
       <header className="border-b border-slate-100 bg-white/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
-          <Link href="/" className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 text-2xl font-bold text-white shadow-lg shadow-blue-200">
-              ✚
+          <Link href="/" className="flex items-center gap-4">
+            <div className="flex h-[60px] w-[60px] items-center justify-center rounded-2xl bg-blue-600 text-4xl font-bold text-white shadow-lg shadow-blue-200">
+              +
             </div>
 
-            <div>
-              <h1 className="text-2xl font-extrabold tracking-tight">
-                Cura<span className="text-blue-600">Sync</span>
+            <div className="flex flex-col">
+              <h1 className="text-3xl font-bold tracking-tight text-[#1e3a8a]">
+                CuraSync
               </h1>
-              <p className="text-xs font-medium text-slate-500">
-                Smarter Healthcare
+              <p className="text-sm font-medium leading-tight tracking-wide text-slate-500">
+                HOSPITAL
+                <br />
+                MANAGEMENT
               </p>
             </div>
           </Link>
@@ -84,7 +86,9 @@ export default function Home() {
 
           <div className="mt-14">
             <div className="mb-6 text-center">
-              <h3 className="text-xl font-bold">How would you like to continue?</h3>
+              <h3 className="text-xl font-bold">
+                How would you like to continue?
+              </h3>
               <p className="mt-2 text-sm text-slate-500">
                 Select your role to enter the appropriate portal.
               </p>
@@ -139,9 +143,12 @@ export default function Home() {
 
       <footer className="border-t border-slate-100 bg-white px-6 py-6">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 sm:flex-row">
-          <p className="text-sm font-bold">
-            Cura<span className="text-blue-600">Sync</span>
-          </p>
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-xl font-bold text-white">
+              +
+            </div>
+            <p className="text-lg font-bold text-[#1e3a8a]">CuraSync</p>
+          </div>
 
           <p className="text-xs text-slate-400">
             © {new Date().getFullYear()} CuraSync. College project prototype.

@@ -22,7 +22,6 @@ public class SecurityConfig {
 
         http
                 .cors(Customizer.withDefaults())
-
                 .csrf(csrf -> csrf.disable())
 
                 .sessionManagement(session -> session
@@ -49,29 +48,40 @@ public class SecurityConfig {
                                 "/api/doctors/login"
                         ).permitAll()
 
+                        // Receptionist login
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/receptionist/login"
+                        ).permitAll()
+
                         // Public doctor directory
                         .requestMatchers(
                                 HttpMethod.GET,
                                 "/api/doctors"
                         ).permitAll()
 
-                        // Only patients can book appointments
+                        // Patient appointment booking
                         .requestMatchers(
                                 HttpMethod.POST,
-                                "/api/appointments/book"
+                                "/api/appointments/book",
+                                "/api/appointments/verify-payment"
                         ).hasRole("PATIENT")
 
-                        // Only doctors can view their appointments
+                        // Doctor appointment dashboard
                         .requestMatchers(
                                 HttpMethod.GET,
                                 "/api/appointments/doctor"
                         ).hasRole("DOCTOR")
 
-                        // Patient-only APIs
+                        // Receptionist APIs
+                        .requestMatchers("/api/receptionist/**")
+                        .hasRole("RECEPTIONIST")
+
+                        // Patient APIs
                         .requestMatchers("/api/patients/**")
                         .hasRole("PATIENT")
 
-                        // Doctor-only APIs
+                        // Doctor APIs
                         .requestMatchers("/api/doctors/**")
                         .hasRole("DOCTOR")
 
@@ -80,7 +90,6 @@ public class SecurityConfig {
                 )
 
                 .httpBasic(basic -> basic.disable())
-
                 .formLogin(form -> form.disable());
 
         return http.build();

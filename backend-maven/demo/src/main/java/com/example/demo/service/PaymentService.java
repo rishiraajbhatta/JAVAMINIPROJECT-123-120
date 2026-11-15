@@ -3,12 +3,14 @@ package com.example.demo.service;
 import com.example.demo.dto.PaymentVerificationRequest;
 import com.example.demo.entity.Appointment;
 import com.example.demo.repository.AppointmentRepository;
+
 import com.razorpay.Order;
 import com.razorpay.RazorpayClient;
 import com.razorpay.RazorpayException;
 import com.razorpay.Utils;
 
 import org.json.JSONObject;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +26,9 @@ public class PaymentService {
     private final RazorpayClient razorpayClient;
     private final AppointmentRepository appointmentRepository;
 
+    @Value("${RAZORPAY_KEY_ID}")
+    private String keyId;
+
     @Value("${RAZORPAY_KEY_SECRET}")
     private String keySecret;
 
@@ -35,14 +40,23 @@ public class PaymentService {
         this.appointmentRepository = appointmentRepository;
     }
 
+    // ==========================================
     // CREATE RAZORPAY PAYMENT ORDER
+    // ==========================================
+
     @Transactional
     public Map<String, Object> createOrder(Appointment appointment)
             throws RazorpayException {
 
-        BigDecimal amount = appointment.getDoctor()
-                .getConsultationFee()
-                .setScale(2, RoundingMode.HALF_UP);
+        BigDecimal amount = appointment.getAmount();
+
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException(
+                    "Invalid appointment consultation fee."
+            );
+        }
+
+        amount = amount.setScale(2, RoundingMode.HALF_UP);
 
         int amountInPaise = amount
                 .multiply(BigDecimal.valueOf(100))
@@ -52,6 +66,7 @@ public class PaymentService {
 
         orderRequest.put("amount", amountInPaise);
         orderRequest.put("currency", "INR");
+
         orderRequest.put(
                 "receipt",
                 "curasync_appointment_" + appointment.getId()
@@ -62,7 +77,10 @@ public class PaymentService {
         appointment.setAmount(amount);
         appointment.setStatus("PENDING_PAYMENT");
         appointment.setPaymentStatus("PENDING");
-        appointment.setRazorpayOrderId(order.get("id"));
+
+        appointment.setRazorpayOrderId(
+                order.get("id")
+        );
 
         appointmentRepository.save(appointment);
 
@@ -71,12 +89,17 @@ public class PaymentService {
         response.put("orderId", order.get("id"));
         response.put("amount", amountInPaise);
         response.put("currency", "INR");
-        response.put("keyId", System.getProperty("RAZORPAY_KEY_ID"));
+
+        // FIX: Return the Razorpay Key ID loaded by Spring
+        response.put("keyId", keyId);
 
         return response;
     }
 
+    // ==========================================
     // VERIFY RAZORPAY PAYMENT
+    // ==========================================
+
     @Transactional
     public Appointment verifyPayment(
             Appointment appointment,
@@ -84,6 +107,7 @@ public class PaymentService {
     ) throws RazorpayException {
 
         // Check whether payment was already verified
+
         if ("PAID".equals(appointment.getPaymentStatus())) {
 
             if (request.getRazorpayPaymentId()
@@ -98,17 +122,19 @@ public class PaymentService {
         }
 
         // Check appointment is awaiting payment
-        if (!"PENDING_PAYMENT".equals(appointment.getStatus()) ||
-                !"PENDING".equals(appointment.getPaymentStatus())) {
+
+        if (!"PENDING_PAYMENT".equals(appointment.getStatus())
+                || !"PENDING".equals(appointment.getPaymentStatus())) {
 
             throw new IllegalArgumentException(
                     "Appointment is not awaiting payment."
             );
         }
 
-        // Verify Razorpay order ID matches our stored order
-        if (appointment.getRazorpayOrderId() == null ||
-                !appointment.getRazorpayOrderId()
+        // Verify Razorpay order ID matches stored order
+
+        if (appointment.getRazorpayOrderId() == null
+                || !appointment.getRazorpayOrderId()
                         .equals(request.getRazorpayOrderId())) {
 
             throw new IllegalArgumentException(
@@ -117,6 +143,7 @@ public class PaymentService {
         }
 
         // Prepare signature verification data
+
         JSONObject verificationData = new JSONObject();
 
         verificationData.put(
@@ -135,6 +162,7 @@ public class PaymentService {
         );
 
         // Verify payment signature using Razorpay SDK
+
         boolean isValid = Utils.verifyPaymentSignature(
                 verificationData,
                 keySecret
@@ -148,6 +176,7 @@ public class PaymentService {
         }
 
         // Payment verification succeeded
+
         appointment.setRazorpayPaymentId(
                 request.getRazorpayPaymentId()
         );

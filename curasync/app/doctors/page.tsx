@@ -55,6 +55,11 @@ export default function DoctorsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // SEARCH AND FILTER STATES
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedSpecialization, setSelectedSpecialization] =
+    useState("All Departments");
+
   const [selectedDoctor, setSelectedDoctor] = useState<number | null>(null);
   const [appointmentDate, setAppointmentDate] = useState("");
   const [appointmentTime, setAppointmentTime] = useState("");
@@ -81,6 +86,7 @@ export default function DoctorsPage() {
     (doctor) => doctor.id === selectedDoctor
   );
 
+  // FETCH REGISTERED DOCTORS
   useEffect(() => {
     async function fetchDoctors() {
       try {
@@ -116,6 +122,40 @@ export default function DoctorsPage() {
     fetchDoctors();
   }, []);
 
+  // DYNAMIC DEPARTMENTS
+  // Departments are automatically created from registered doctors.
+  const specializations = [
+    "All Departments",
+    ...Array.from(
+      new Set(
+        doctors
+          .map((doctor) => doctor.specialization?.trim())
+          .filter((specialization): specialization is string =>
+            Boolean(specialization)
+          )
+      )
+    ).sort((a, b) => a.localeCompare(b)),
+  ];
+
+  // SEARCH AND FILTER DOCTORS
+  const filteredDoctors = doctors.filter((doctor) => {
+    const normalizedSearch = searchQuery.trim().toLowerCase();
+
+    const normalizedDoctorName = doctor.fullName.toLowerCase();
+
+    const matchesSearch =
+      normalizedSearch === "" ||
+      normalizedDoctorName.includes(normalizedSearch);
+
+    const matchesSpecialization =
+      selectedSpecialization === "All Departments" ||
+      doctor.specialization?.toLowerCase() ===
+        selectedSpecialization.toLowerCase();
+
+    return matchesSearch && matchesSpecialization;
+  });
+
+  // LOAD RAZORPAY SCRIPT
   function loadRazorpayScript(): Promise<boolean> {
     return new Promise((resolve) => {
       if (window.Razorpay) {
@@ -133,6 +173,7 @@ export default function DoctorsPage() {
     });
   }
 
+  // APPOINTMENT BOOKING
   async function handleBooking(doctorId: number) {
     if (booking) return;
 
@@ -300,6 +341,12 @@ export default function DoctorsPage() {
     }
   }
 
+  // CLEAR SEARCH AND FILTERS
+  function clearFilters() {
+    setSearchQuery("");
+    setSelectedSpecialization("All Departments");
+  }
+
   return (
     <main className="min-h-screen bg-slate-50">
       {/* HEADER */}
@@ -334,8 +381,9 @@ export default function DoctorsPage() {
           </h1>
 
           <p className="mt-4 max-w-2xl leading-7 text-blue-50">
-            Browse our registered doctors, view consultation fees, and book
-            your appointment conveniently through CuraSync.
+            Browse our registered doctors, search by name or medical
+            department, view consultation fees, and book your appointment
+            conveniently through CuraSync.
           </p>
         </div>
 
@@ -346,7 +394,7 @@ export default function DoctorsPage() {
           </h2>
 
           <p className="mt-2 text-slate-500">
-            Choose a doctor and schedule your appointment.
+            Search for doctors by name or filter by medical department.
           </p>
         </div>
 
@@ -375,140 +423,258 @@ export default function DoctorsPage() {
           </div>
         )}
 
-        {/* DOCTOR CARDS */}
-        {!loading && doctors.length > 0 && (
-          <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {doctors.map((doctor) => (
-              <article
-                key={doctor.id}
-                className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
-              >
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-blue-100 text-3xl">
-                  🩺
-                </div>
-
-                <h3 className="mt-5 text-xl font-bold text-slate-900">
-                  {doctor.fullName.startsWith("Dr.")
-                    ? doctor.fullName
-                    : `Dr. ${doctor.fullName}`}
-                </h3>
-
-                <p className="mt-2 font-semibold text-blue-600">
-                  {doctor.specialization}
-                </p>
-
-                <p className="mt-2 text-sm text-slate-500">
-                  {doctor.qualification}
-                </p>
-
-                <p className="mt-2 text-sm text-slate-500">
-                  {doctor.experienceYears} years of experience
-                </p>
-
-                <div className="mt-5 rounded-xl bg-emerald-50 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
-                    Consultation Fee
-                  </p>
-
-                  <p className="mt-1 text-2xl font-extrabold text-emerald-800">
-                    ₹
-                    {Number(doctor.consultationFee).toLocaleString(
-                      "en-IN"
-                    )}
-                  </p>
-                </div>
-
-                <button
-                  onClick={() => {
-                    setSelectedDoctor(doctor.id);
-                    setMessage("");
-                    setBookingSuccess(false);
-                  }}
-                  className="mt-6 w-full rounded-xl bg-blue-600 px-4 py-3 font-semibold text-white transition hover:bg-blue-700"
+        {/* SEARCH AND FILTER SECTION */}
+        {!loading && !error && doctors.length > 0 && (
+          <div className="mt-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="grid gap-5 md:grid-cols-2">
+              {/* SEARCH BY NAME */}
+              <div>
+                <label
+                  htmlFor="doctorSearch"
+                  className="mb-2 block text-sm font-bold text-slate-700"
                 >
-                  Book Appointment
-                </button>
+                  Search Doctor
+                </label>
 
-                {/* APPOINTMENT FORM */}
-                {selectedDoctor === doctor.id && (
-                  <div className="mt-5 space-y-4 rounded-xl bg-slate-50 p-4">
-                    <h4 className="font-bold text-slate-800">
-                      Select Appointment
-                    </h4>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg">
+                    🔍
+                  </span>
 
-                    <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3">
-                      <p className="text-sm font-medium text-emerald-700">
-                        Amount Payable
-                      </p>
+                  <input
+                    id="doctorSearch"
+                    type="text"
+                    placeholder="Enter doctor name..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full rounded-xl border border-slate-300 bg-white py-3 pl-12 pr-4 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                </div>
+              </div>
 
-                      <p className="text-xl font-bold text-emerald-800">
-                        ₹
-                        {Number(doctor.consultationFee).toLocaleString(
-                          "en-IN"
-                        )}
-                      </p>
-                    </div>
+              {/* FILTER BY DEPARTMENT */}
+              <div>
+                <label
+                  htmlFor="specializationFilter"
+                  className="mb-2 block text-sm font-bold text-slate-700"
+                >
+                  Filter by Department
+                </label>
 
-                    <div>
-                      <label className="mb-2 block text-sm font-medium text-slate-700">
-                        Appointment Date
-                      </label>
-
-                      <input
-                        type="date"
-                        min={new Date().toLocaleDateString("en-CA")}
-                        value={appointmentDate}
-                        onChange={(e) =>
-                          setAppointmentDate(e.target.value)
-                        }
-                        disabled={booking}
-                        className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="mb-2 block text-sm font-medium text-slate-700">
-                        Appointment Time
-                      </label>
-
-                      <input
-                        type="time"
-                        value={appointmentTime}
-                        onChange={(e) =>
-                          setAppointmentTime(e.target.value)
-                        }
-                        disabled={booking}
-                        className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900"
-                      />
-                    </div>
-
-                    <button
-                      onClick={() => handleBooking(doctor.id)}
-                      disabled={booking}
-                      className="w-full rounded-xl bg-emerald-600 px-4 py-3 font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                <select
+                  id="specializationFilter"
+                  value={selectedSpecialization}
+                  onChange={(e) =>
+                    setSelectedSpecialization(e.target.value)
+                  }
+                  className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                >
+                  {specializations.map((specialization) => (
+                    <option
+                      key={specialization}
+                      value={specialization}
                     >
-                      {booking
-                        ? "Opening Payment..."
-                        : "Proceed to Payment"}
-                    </button>
+                      {specialization}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* FILTER SUMMARY */}
+            <div className="mt-5 flex flex-col justify-between gap-4 border-t border-slate-100 pt-5 sm:flex-row sm:items-center">
+              <div>
+                <p className="text-sm text-slate-500">
+                  Showing{" "}
+                  <span className="font-extrabold text-blue-600">
+                    {filteredDoctors.length}
+                  </span>{" "}
+                  of{" "}
+                  <span className="font-extrabold text-slate-800">
+                    {doctors.length}
+                  </span>{" "}
+                  registered doctors
+                </p>
+
+                {selectedSpecialization !== "All Departments" && (
+                  <p className="mt-1 text-xs text-blue-600">
+                    Department: {selectedSpecialization}
+                  </p>
+                )}
+              </div>
+
+              <button
+                onClick={clearFilters}
+                className="rounded-xl border border-blue-200 bg-blue-50 px-5 py-2.5 text-sm font-bold text-blue-700 transition hover:bg-blue-100"
+              >
+                Clear Filters
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* DOCTOR CARDS */}
+        {!loading && !error && doctors.length > 0 && (
+          <>
+            {filteredDoctors.length > 0 ? (
+              <div className="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {filteredDoctors.map((doctor) => (
+                  <article
+                    key={doctor.id}
+                    className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+                  >
+                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-blue-100 text-3xl">
+                      🩺
+                    </div>
+
+                    <h3 className="mt-5 text-xl font-bold text-slate-900">
+                      {doctor.fullName.startsWith("Dr.")
+                        ? doctor.fullName
+                        : `Dr. ${doctor.fullName}`}
+                    </h3>
+
+                    <p className="mt-2 font-semibold text-blue-600">
+                      {doctor.specialization}
+                    </p>
+
+                    <p className="mt-2 text-sm text-slate-500">
+                      {doctor.qualification}
+                    </p>
+
+                    <p className="mt-2 text-sm text-slate-500">
+                      {doctor.experienceYears} years of experience
+                    </p>
+
+                    <div className="mt-5 rounded-xl bg-emerald-50 p-4">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
+                        Consultation Fee
+                      </p>
+
+                      <p className="mt-1 text-2xl font-extrabold text-emerald-800">
+                        ₹
+                        {Number(
+                          doctor.consultationFee
+                        ).toLocaleString("en-IN")}
+                      </p>
+                    </div>
 
                     <button
                       onClick={() => {
-                        if (!booking) {
-                          setSelectedDoctor(null);
-                          setMessage("");
-                        }
+                        setSelectedDoctor(doctor.id);
+                        setMessage("");
+                        setBookingSuccess(false);
                       }}
-                      disabled={booking}
-                      className="w-full rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 disabled:opacity-50"
+                      className="mt-6 w-full rounded-xl bg-blue-600 px-4 py-3 font-semibold text-white transition hover:bg-blue-700"
                     >
-                      Cancel
+                      Book Appointment
                     </button>
-                  </div>
-                )}
-              </article>
-            ))}
-          </div>
+
+                    {/* APPOINTMENT FORM */}
+                    {selectedDoctor === doctor.id && (
+                      <div className="mt-5 space-y-4 rounded-xl bg-slate-50 p-4">
+                        <h4 className="font-bold text-slate-800">
+                          Select Appointment
+                        </h4>
+
+                        <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3">
+                          <p className="text-sm font-medium text-emerald-700">
+                            Amount Payable
+                          </p>
+
+                          <p className="text-xl font-bold text-emerald-800">
+                            ₹
+                            {Number(
+                              doctor.consultationFee
+                            ).toLocaleString("en-IN")}
+                          </p>
+                        </div>
+
+                        <div>
+                          <label className="mb-2 block text-sm font-medium text-slate-700">
+                            Appointment Date
+                          </label>
+
+                          <input
+                            type="date"
+                            min={new Date().toLocaleDateString("en-CA")}
+                            value={appointmentDate}
+                            onChange={(e) =>
+                              setAppointmentDate(e.target.value)
+                            }
+                            disabled={booking}
+                            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="mb-2 block text-sm font-medium text-slate-700">
+                            Appointment Time
+                          </label>
+
+                          <input
+                            type="time"
+                            value={appointmentTime}
+                            onChange={(e) =>
+                              setAppointmentTime(e.target.value)
+                            }
+                            disabled={booking}
+                            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900"
+                          />
+                        </div>
+
+                        <button
+                          onClick={() => handleBooking(doctor.id)}
+                          disabled={booking}
+                          className="w-full rounded-xl bg-emerald-600 px-4 py-3 font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {booking
+                            ? "Opening Payment..."
+                            : "Proceed to Payment"}
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            if (!booking) {
+                              setSelectedDoctor(null);
+                              setMessage("");
+                            }
+                          }}
+                          disabled={booking}
+                          className="w-full rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 disabled:opacity-50"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    )}
+                  </article>
+                ))}
+              </div>
+            ) : (
+              /* NO SEARCH RESULTS */
+              <div className="mt-8 rounded-3xl border border-slate-200 bg-white p-10 text-center shadow-sm">
+                <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-blue-50 text-4xl">
+                  🔍
+                </div>
+
+                <h3 className="mt-5 text-2xl font-extrabold text-slate-900">
+                  No Doctors Found
+                </h3>
+
+                <p className="mx-auto mt-3 max-w-md text-slate-500">
+                  We couldn’t find any doctors matching your search
+                  or selected department. Try another name or
+                  choose a different department.
+                </p>
+
+                <button
+                  onClick={clearFilters}
+                  className="mt-6 rounded-xl bg-blue-600 px-6 py-3 font-bold text-white transition hover:bg-blue-700"
+                >
+                  Clear Search & Filters
+                </button>
+              </div>
+            )}
+          </>
         )}
 
         {/* PREMIUM SUCCESS / UNAVAILABLE / ERROR UI */}

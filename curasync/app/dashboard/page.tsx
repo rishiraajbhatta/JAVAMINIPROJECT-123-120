@@ -85,8 +85,21 @@ export default function DashboardPage() {
     <main className="min-h-screen bg-slate-50">
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
-          <Link href="/" className="text-2xl font-extrabold text-slate-950">
-            Cura<span className="text-blue-600">Sync</span>
+          <Link href="/" className="flex items-center gap-3">
+            <div className="flex h-[60px] w-[60px] items-center justify-center rounded-2xl bg-blue-600 text-4xl font-bold text-white shadow-lg shadow-blue-200">
+              +
+            </div>
+
+            <div className="flex flex-col">
+              <h1 className="text-3xl font-bold tracking-tight text-[#1e3a8a]">
+                CuraSync
+              </h1>
+              <p className="text-sm font-medium leading-tight tracking-wide text-slate-500">
+                HOSPITAL
+                <br />
+                MANAGEMENT
+              </p>
+            </div>
           </Link>
 
           <div className="flex items-center gap-3">

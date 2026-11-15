@@ -9,6 +9,7 @@ import com.example.demo.repository.AppointmentRepository;
 import com.example.demo.repository.DoctorRepository;
 import com.example.demo.repository.PatientRepository;
 import com.example.demo.service.AppointmentService;
+import com.example.demo.service.EmailService;
 import com.example.demo.service.PaymentService;
 import com.razorpay.RazorpayException;
 
@@ -40,22 +41,28 @@ public class AppointmentController {
     private final DoctorRepository doctorRepository;
     private final AppointmentRepository appointmentRepository;
     private final PaymentService paymentService;
+    private final EmailService emailService;
 
     public AppointmentController(
             AppointmentService appointmentService,
             PatientRepository patientRepository,
             DoctorRepository doctorRepository,
             AppointmentRepository appointmentRepository,
-            PaymentService paymentService) {
+            PaymentService paymentService,
+            EmailService emailService) {
 
         this.appointmentService = appointmentService;
         this.patientRepository = patientRepository;
         this.doctorRepository = doctorRepository;
         this.appointmentRepository = appointmentRepository;
         this.paymentService = paymentService;
+        this.emailService = emailService;
     }
 
-    // PATIENT CREATES AN APPOINTMENT AND PAYMENT ORDER
+    // ==========================================
+    // PATIENT CREATES APPOINTMENT AND PAYMENT ORDER
+    // ==========================================
+
     @PostMapping("/book")
     public ResponseEntity<?> bookAppointment(
             @RequestBody AppointmentRequest request,
@@ -116,10 +123,19 @@ public class AppointmentController {
 
             appointment.setPatient(patient);
             appointment.setDoctor(doctor);
-            appointment.setAppointmentDate(request.getAppointmentDate());
-            appointment.setAppointmentTime(request.getAppointmentTime());
 
-            appointment.setAmount(doctor.getConsultationFee());
+            appointment.setAppointmentDate(
+                    request.getAppointmentDate()
+            );
+
+            appointment.setAppointmentTime(
+                    request.getAppointmentTime()
+            );
+
+            appointment.setAmount(
+                    doctor.getConsultationFee()
+            );
+
             appointment.setStatus("PENDING_PAYMENT");
             appointment.setPaymentStatus("PENDING");
 
@@ -136,9 +152,20 @@ public class AppointmentController {
                     "Appointment created. Complete payment to confirm."
             );
 
-            response.put("appointmentId", savedAppointment.getId());
-            response.put("patientName", patient.getFullName());
-            response.put("doctorName", doctor.getFullName());
+            response.put(
+                    "appointmentId",
+                    savedAppointment.getId()
+            );
+
+            response.put(
+                    "patientName",
+                    patient.getFullName()
+            );
+
+            response.put(
+                    "doctorName",
+                    doctor.getFullName()
+            );
 
             response.put(
                     "appointmentDate",
@@ -150,7 +177,10 @@ public class AppointmentController {
                     savedAppointment.getAppointmentTime()
             );
 
-            response.put("status", savedAppointment.getStatus());
+            response.put(
+                    "status",
+                    savedAppointment.getStatus()
+            );
 
             response.putAll(paymentDetails);
 
@@ -159,35 +189,51 @@ public class AppointmentController {
 
         } catch (IllegalArgumentException e) {
 
-            logger.warn("Appointment booking validation failed: {}", e.getMessage());
+            logger.warn(
+                    "Appointment booking validation failed: {}",
+                    e.getMessage()
+            );
 
             return ResponseEntity.status(HttpStatus.CONFLICT)
                     .body(Map.of("message", e.getMessage()));
 
         } catch (RazorpayException e) {
 
-            logger.error("RAZORPAY ORDER CREATION FAILED", e);
+            logger.error(
+                    "RAZORPAY ORDER CREATION FAILED",
+                    e
+            );
 
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of(
-                            "message",
-                            "Unable to create Razorpay payment order."
-                    ));
+            return ResponseEntity.status(
+                    HttpStatus.INTERNAL_SERVER_ERROR
+            ).body(Map.of(
+                    "message",
+                    "Unable to create Razorpay payment order."
+            ));
 
         } catch (Exception e) {
 
-            logger.error("APPOINTMENT BOOKING FAILED", e);
+            logger.error(
+                    "APPOINTMENT BOOKING FAILED",
+                    e
+            );
 
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of(
-                            "message",
-                            "Appointment booking failed."
-                    ));
+            return ResponseEntity.status(
+                    HttpStatus.INTERNAL_SERVER_ERROR
+            ).body(Map.of(
+                    "message",
+                    "Appointment booking failed."
+            ));
         }
     }
 
-    // PATIENT VERIFIES RAZORPAY PAYMENT
+    // ==========================================
+    // VERIFY PATIENT RAZORPAY PAYMENT
+    // SEND CONFIRMATION EMAIL ONLY TO PATIENT
+    // ==========================================
+
     @PostMapping("/verify-payment")
+    @Transactional
     public ResponseEntity<?> verifyPayment(
             @RequestBody PaymentVerificationRequest request,
             Authentication authentication) {
@@ -245,7 +291,56 @@ public class AppointmentController {
         try {
 
             Appointment verifiedAppointment =
-                    paymentService.verifyPayment(appointment, request);
+                    paymentService.verifyPayment(
+                            appointment,
+                            request
+                    );
+
+            boolean confirmationEmailSent = false;
+
+            // ==========================================
+            // PATIENT CONFIRMATION EMAIL
+            // ==========================================
+
+            if ("PAID".equalsIgnoreCase(
+                    verifiedAppointment.getPaymentStatus())
+                    &&
+                    !verifiedAppointment.isConfirmationEmailSent()) {
+
+                try {
+
+                    emailService.sendAppointmentConfirmation(
+                            verifiedAppointment
+                    );
+
+                    verifiedAppointment.setConfirmationEmailSent(true);
+
+                    appointmentRepository.save(
+                            verifiedAppointment
+                    );
+
+                    confirmationEmailSent = true;
+
+                    logger.info(
+                            "Patient confirmation email sent for appointment ID: {}",
+                            verifiedAppointment.getId()
+                    );
+
+                } catch (Exception emailException) {
+
+                    logger.error(
+                            "PATIENT CONFIRMATION EMAIL FAILED FOR APPOINTMENT ID: {}",
+                            verifiedAppointment.getId(),
+                            emailException
+                    );
+
+                    confirmationEmailSent = false;
+                }
+            }
+
+            // ==========================================
+            // RESPONSE
+            // ==========================================
 
             Map<String, Object> response = new HashMap<>();
 
@@ -274,38 +369,57 @@ public class AppointmentController {
                     verifiedAppointment.getRazorpayPaymentId()
             );
 
+            response.put(
+                    "confirmationEmailSent",
+                    confirmationEmailSent
+            );
+
             return ResponseEntity.ok(response);
 
         } catch (IllegalArgumentException e) {
 
-            logger.warn("PAYMENT VERIFICATION VALIDATION FAILED: {}", e.getMessage());
+            logger.warn(
+                    "PAYMENT VERIFICATION VALIDATION FAILED: {}",
+                    e.getMessage()
+            );
 
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Map.of("message", e.getMessage()));
 
         } catch (RazorpayException e) {
 
-            logger.error("RAZORPAY PAYMENT VERIFICATION FAILED", e);
+            logger.error(
+                    "RAZORPAY PAYMENT VERIFICATION FAILED",
+                    e
+            );
 
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of(
-                            "message",
-                            "Payment verification failed."
-                    ));
+            return ResponseEntity.status(
+                    HttpStatus.INTERNAL_SERVER_ERROR
+            ).body(Map.of(
+                    "message",
+                    "Payment verification failed."
+            ));
 
         } catch (Exception e) {
 
-            logger.error("PAYMENT VERIFICATION FAILED", e);
+            logger.error(
+                    "PAYMENT VERIFICATION FAILED",
+                    e
+            );
 
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of(
-                            "message",
-                            "Payment verification failed."
-                    ));
+            return ResponseEntity.status(
+                    HttpStatus.INTERNAL_SERVER_ERROR
+            ).body(Map.of(
+                    "message",
+                    "Payment verification failed."
+            ));
         }
     }
 
+    // ==========================================
     // DOCTOR VIEWS THEIR APPOINTMENTS
+    // ==========================================
+
     @GetMapping("/doctor")
     @Transactional(readOnly = true)
     public ResponseEntity<?> getDoctorAppointments(
@@ -332,13 +446,18 @@ public class AppointmentController {
         }
 
         var appointments =
-                appointmentService.getDoctorAppointments(doctor.getId());
+                appointmentService.getDoctorAppointments(
+                        doctor.getId()
+                );
 
         var response = appointments.stream().map(appointment -> {
 
             Map<String, Object> data = new HashMap<>();
 
-            data.put("appointmentId", appointment.getId());
+            data.put(
+                    "appointmentId",
+                    appointment.getId()
+            );
 
             data.put(
                     "patientName",
@@ -360,7 +479,10 @@ public class AppointmentController {
                     appointment.getAppointmentTime()
             );
 
-            data.put("status", appointment.getStatus());
+            data.put(
+                    "status",
+                    appointment.getStatus()
+            );
 
             return data;
 

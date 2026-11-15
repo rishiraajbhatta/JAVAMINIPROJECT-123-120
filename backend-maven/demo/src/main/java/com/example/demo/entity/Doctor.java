@@ -43,6 +43,11 @@ public class Doctor {
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal consultationFee = new BigDecimal("500.00");
 
+    // True means receptionist has set an individual fee for this doctor.
+    // False means the doctor follows the department fee.
+    @Column(nullable = false)
+    private boolean feeOverride = false;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -63,8 +68,10 @@ public class Doctor {
         this.specialization = specialization;
         this.qualification = qualification;
         this.experienceYears = experienceYears;
+
         this.available = true;
         this.consultationFee = new BigDecimal("500.00");
+        this.feeOverride = false;
     }
 
     @PrePersist
@@ -142,6 +149,14 @@ public class Doctor {
 
     public void setConsultationFee(BigDecimal consultationFee) {
         this.consultationFee = consultationFee;
+    }
+
+    public boolean isFeeOverride() {
+        return feeOverride;
+    }
+
+    public void setFeeOverride(boolean feeOverride) {
+        this.feeOverride = feeOverride;
     }
 
     public LocalDateTime getCreatedAt() {
