@@ -310,12 +310,18 @@ public class ReceptionistController {
                         .toList();
 
         BigDecimal todaysRevenue =
-                todaysAppointments.stream()
-                        .filter(appointment ->
-                                "PAID".equalsIgnoreCase(
-                                        appointment.getPaymentStatus()
-                                )
+        allAppointments.stream()
+                .filter(appointment ->
+                        appointment.getCreatedAt() != null
+                                && appointment.getCreatedAt()
+                                .toLocalDate()
+                                .equals(today)
+                )
+                .filter(appointment ->
+                        "PAID".equalsIgnoreCase(
+                                appointment.getPaymentStatus()
                         )
+                )
                         .map(Appointment::getAmount)
                         .filter(amount -> amount != null)
                         .reduce(BigDecimal.ZERO, BigDecimal::add);
