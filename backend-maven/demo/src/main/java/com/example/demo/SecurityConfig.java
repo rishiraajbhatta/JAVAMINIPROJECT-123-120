@@ -21,76 +21,81 @@ public class SecurityConfig {
             throws Exception {
 
         http
-                .cors(Customizer.withDefaults())
-                .csrf(csrf -> csrf.disable())
+            .cors(Customizer.withDefaults())
 
-                .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
-                )
+            .csrf(csrf -> csrf.disable())
 
-                .authorizeHttpRequests(authorize -> authorize
+            .sessionManagement(session -> session
+                .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+            )
 
-                        // Public health API
-                        .requestMatchers("/api/health").permitAll()
+            .authorizeHttpRequests(authorize -> authorize
 
-                        // Patient registration and login
-                        .requestMatchers(
-                                HttpMethod.POST,
-                                "/api/patients/register",
-                                "/api/patients/login",
-                                "/api/patients/logout"
-                        ).permitAll()
+                // Public health API
+                .requestMatchers("/api/health").permitAll()
 
-                        // Doctor registration and login
-                        .requestMatchers(
-                                HttpMethod.POST,
-                                "/api/doctors/register",
-                                "/api/doctors/login"
-                        ).permitAll()
+                // Patient registration and login
+                .requestMatchers(
+                    HttpMethod.POST,
+                    "/api/patients/register",
+                    "/api/patients/login",
+                    "/api/patients/logout"
+                ).permitAll()
 
-                        // Receptionist login
-                        .requestMatchers(
-                                HttpMethod.POST,
-                                "/api/receptionist/login"
-                        ).permitAll()
+                // Doctor registration and login
+                .requestMatchers(
+                    HttpMethod.POST,
+                    "/api/doctors/register",
+                    "/api/doctors/login"
+                ).permitAll()
 
-                        // Public doctor directory
-                        .requestMatchers(
-                                HttpMethod.GET,
-                                "/api/doctors"
-                        ).permitAll()
+                // Receptionist login
+                .requestMatchers(
+                    HttpMethod.POST,
+                    "/api/receptionist/login"
+                ).permitAll()
 
-                        // Patient appointment booking
-                        .requestMatchers(
-                                HttpMethod.POST,
-                                "/api/appointments/book",
-                                "/api/appointments/verify-payment"
-                        ).hasRole("PATIENT")
+                // Public doctor listing
+                .requestMatchers(
+                    HttpMethod.GET,
+                    "/api/doctors"
+                ).permitAll()
 
-                        // Doctor appointment dashboard
-                        .requestMatchers(
-                                HttpMethod.GET,
-                                "/api/appointments/doctor"
-                        ).hasRole("DOCTOR")
+                // Patient appointment booking and payment verification
+                .requestMatchers(
+                    HttpMethod.POST,
+                    "/api/appointments/book",
+                    "/api/appointments/verify-payment"
+                ).hasRole("PATIENT")
 
-                        // Receptionist APIs
-                        .requestMatchers("/api/receptionist/**")
-                        .hasRole("RECEPTIONIST")
+                // Doctor appointment dashboard
+                .requestMatchers(
+                    HttpMethod.GET,
+                    "/api/appointments/doctor"
+                ).hasRole("DOCTOR")
 
-                        // Patient APIs
-                        .requestMatchers("/api/patients/**")
-                        .hasRole("PATIENT")
+                // Receptionist APIs
+                .requestMatchers(
+                    "/api/receptionist/**"
+                ).hasRole("RECEPTIONIST")
 
-                        // Doctor APIs
-                        .requestMatchers("/api/doctors/**")
-                        .hasRole("DOCTOR")
+                // Patient APIs
+                .requestMatchers(
+                    "/api/patients/**"
+                ).hasRole("PATIENT")
 
-                        // All remaining endpoints require authentication
-                        .anyRequest().authenticated()
-                )
+                // Doctor APIs
+                .requestMatchers(
+                    "/api/doctors/**"
+                ).hasRole("DOCTOR")
 
-                .httpBasic(basic -> basic.disable())
-                .formLogin(form -> form.disable());
+                // All other requests require authentication
+                .anyRequest().authenticated()
+            )
+
+            // Disable default login mechanisms
+            .httpBasic(httpBasic -> httpBasic.disable())
+            .formLogin(formLogin -> formLogin.disable());
 
         return http.build();
     }
@@ -100,34 +105,39 @@ public class SecurityConfig {
 
         CorsConfiguration configuration = new CorsConfiguration();
 
+        // Allowed frontend origins
         configuration.setAllowedOrigins(
-                List.of(
-                        "http://localhost:3000",
-                        "https://curasync-inq69hfa2-rishiraajbhatta.vercel.app"
-                )
+            List.of(
+                "http://localhost:3000",
+                "https://curasync-inq69hfa2-rishiraajbhatta.vercel.app",
+                "https://curasync-c3nns33a9-rishiraajbhatta.vercel.app"
+            )
         );
 
+        // Allowed HTTP methods
         configuration.setAllowedMethods(
-                List.of(
-                        "GET",
-                        "POST",
-                        "PUT",
-                        "DELETE",
-                        "OPTIONS"
-                )
+            List.of(
+                "GET",
+                "POST",
+                "PUT",
+                "DELETE",
+                "OPTIONS"
+            )
         );
 
+        // Allowed request headers
         configuration.setAllowedHeaders(
-                List.of(
-                        "Content-Type",
-                        "Authorization"
-                )
+            List.of(
+                "Content-Type",
+                "Authorization"
+            )
         );
 
+        // Allow session cookies
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source =
-                new UrlBasedCorsConfigurationSource();
+            new UrlBasedCorsConfigurationSource();
 
         source.registerCorsConfiguration("/api/**", configuration);
 
