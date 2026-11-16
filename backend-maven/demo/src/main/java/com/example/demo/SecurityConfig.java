@@ -89,12 +89,12 @@ public class SecurityConfig {
                     "/api/doctors/**"
                 ).hasRole("DOCTOR")
 
-                // All other requests require authentication
+                // All remaining requests require authentication
                 .anyRequest().authenticated()
             )
 
-            // Disable default login mechanisms
             .httpBasic(httpBasic -> httpBasic.disable())
+
             .formLogin(formLogin -> formLogin.disable());
 
         return http.build();
@@ -105,12 +105,11 @@ public class SecurityConfig {
 
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // Allowed frontend origins
-        configuration.setAllowedOrigins(
+        // Allow localhost and all Vercel deployments
+        configuration.setAllowedOriginPatterns(
             List.of(
                 "http://localhost:3000",
-                "https://curasync-inq69hfa2-rishiraajbhatta.vercel.app",
-                "https://curasync-c3nns33a9-rishiraajbhatta.vercel.app"
+                "https://*.vercel.app"
             )
         );
 
