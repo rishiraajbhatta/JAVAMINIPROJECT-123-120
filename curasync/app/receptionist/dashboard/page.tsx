@@ -44,8 +44,8 @@ function loadRazorpayScript(): Promise<boolean> {
   });
 }
 
-const API_URL = "http://localhost:8080/api/receptionist";
-const DOCTOR_API_URL = "http://localhost:8080/api/doctors";
+const API_URL = "https://javaminiproject-123-120-production.up.railway.app/api/receptionist";
+const DOCTOR_API_URL = "https://javaminiproject-123-120-production.up.railway.app/api/doctors";
 
 const menuItems = [
   { name: "Overview", icon: "◫" },

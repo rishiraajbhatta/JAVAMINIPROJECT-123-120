@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 
-const API_URL = "http://localhost:8080/api/patients/register";
+const API_URL = "https://javaminiproject-123-120-production.up.railway.app/api/patients/register";
 
 export default function RegisterPage() {
 const [name, setName] = useState("");

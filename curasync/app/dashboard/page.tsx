@@ -4,8 +4,8 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-const API_URL = "http://localhost:8080/api/patients/me";
-const LOGOUT_URL = "http://localhost:8080/api/patients/logout";
+const API_URL = "https://javaminiproject-123-120-production.up.railway.app/api/patients/me";
+const LOGOUT_URL = "https://javaminiproject-123-120-production.up.railway.app/api/patients/logout";
 
 export default function DashboardPage() {
   const router = useRouter();

@@ -3,10 +3,10 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-const DOCTORS_API = "http://localhost:8080/api/doctors";
-const BOOKING_API = "http://localhost:8080/api/appointments/book";
+const DOCTORS_API = "https://javaminiproject-123-120-production.up.railway.app/api/doctors";
+const BOOKING_API = "https://javaminiproject-123-120-production.up.railway.app/api/appointments/book";
 const VERIFY_PAYMENT_API =
-  "http://localhost:8080/api/appointments/verify-payment";
+  "https://javaminiproject-123-120-production.up.railway.app/api/appointments/verify-payment";
 
 type Doctor = {
   id: number;

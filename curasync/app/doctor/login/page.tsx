@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-const API_URL = "http://localhost:8080/api/doctors/login";
+const API_URL = "https://javaminiproject-123-120-production.up.railway.app/api/doctors/login";
 
 export default function DoctorLoginPage() {
   const router = useRouter();

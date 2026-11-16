@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
-const LOGIN_API = "http://localhost:8080/api/receptionist/login";
+const LOGIN_API = "https://javaminiproject-123-120-production.up.railway.app/api/receptionist/login";
 
 export default function ReceptionistLoginPage() {
   const router = useRouter();

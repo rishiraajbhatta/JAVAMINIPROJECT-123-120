@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-const API_URL = "http://localhost:8080/api/appointments/doctor";
+const API_URL = "https://javaminiproject-123-120-production.up.railway.app/api/appointments/doctor";
 
 interface Appointment {
   appointmentId: number;

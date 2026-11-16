@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
-const API_URL = "http://localhost:8080";
+const API_URL = "https://javaminiproject-123-120-production.up.railway.app";
 
 interface Patient {
   id: number;
